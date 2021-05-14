@@ -1,0 +1,69 @@
+%%% ===========================================================================
+%%% Mod 3 interpretation.
+%%% ===========================================================================
+
+accumulate lib.
+accumulate formula.
+accumulate verbosity.
+accumulate prop.
+accumulate fol.
+accumulate test.
+
+%%% ---------------------------------------------------------------------------
+%%% Model, language, interpretation.
+%%% ---------------------------------------------------------------------------
+
+type mod int -> int -> int.
+
+domain [0,1,2].
+
+type zero, one, two term.
+type add, mul term -> term -> term.
+type eq term -> term -> formula.
+
+namespace mod3_interp
+{
+    pred eq/3 i:int, i:int, o:bool.
+    eq/3 M N B :-
+        P is (M - N) mod 3,
+        if (P = 0) (B = tt) (B = ff).
+
+    pred termval/3 i:term, o:int.
+    termval/3 zero 0.
+    termval/3 one  1.
+    termval/3 two  2.
+    termval/3 (add X Y) N :- N is {termval X} + {termval Y}.
+    termval/3 (mul X Y) N :- N is {termval X} * {termval Y}.
+
+    pred atomval/3 i:formula, o:bool.
+    atomval/3 (eq X Y) B :- !, termval X M, termval Y N, eq/3 M N B.
+}
+
+pred holds/3 i:formula, o:bool.
+holds/3 P B :-
+    [ (pi X A \ termval X A :- mod3_interp.termval/3 X A, !)
+    , (pi P B \ eval P B    :- mod3_interp.atomval/3 P B, !)
+    ] => holds P B.
+
+%%% ---------------------------------------------------------------------------
+%%% Run tests.
+%%% ---------------------------------------------------------------------------
+
+shorten test.{ run-tests, ok, ko, okb, kob, ok-eq, section }.
+shorten verbosity.{ quiet, terse, info, verbose, debug, with-verbosity }.
+
+main :-
+    with-verbosity quiet (run-tests
+    [ section "Mod 3"
+    , okb (holds/3 (eq (add two one) zero))
+    , kob (holds/3 (eq (add two two) zero))
+    , okb (holds/3 (eq (mul two two)  one))
+    , kob (holds/3 (eq (mul two two) zero))
+    , okb (holds/3 (all X \ eq (add X zero)   X ))
+    , okb (holds/3 (ex  X \ eq (add X  one)  two))
+    , okb (holds/3 (all X \ eq (mul X zero) zero))
+    , kob (holds/3 (ex  X \ eq (mul X zero)  one))
+    , okb (holds/3 (all X \ all Y \ eq (add X Y) (add Y X)))
+    , okb (holds/3 (all X \ all Y \ eq (mul X Y) (mul Y X)))
+    , kob (holds/3 (all X \ all Y \ eq (add X Y) (mul Y X)))
+    ]).

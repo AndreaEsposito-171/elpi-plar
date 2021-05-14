@@ -1,0 +1,115 @@
+%%% ===========================================================================
+%%% Davis Putnam Predicate
+%%% ===========================================================================
+
+%%% ---------------------------------------------------------------------------
+%%% Negation of literals.
+%%% ---------------------------------------------------------------------------
+
+pred negated i:formula, o: formula.
+negated X Y :- atomic X, copy/fm Y (neg X).
+negated (neg X) Y :- atomic X, copy/fm Y X.
+
+pred contradiction i: list formula.
+contradiction L :- (sigma x \ find_in x L, negated x XN, find_in XN L, literal x).
+
+%%% ---------------------------------------------------------------------------
+%%% List Predicates to collect literals.
+%%% ---------------------------------------------------------------------------
+
+pred literals i:formula, o:list formula.
+literals P L :-
+    (pi A L L1 \ fold A L L1 :- literal A, !, insert A L L1)
+    => fold P [] L.
+
+pred find_in i: formula, i:list formula.
+find_in X [X] :- !.
+find_in X [X|_] :- !.
+find_in X [_|Xs] :- find_in X Xs.
+
+pred pure_lit i: list formula, i: list formula, o:list formula.
+pure_lit _ [] [] :- !.
+pure_lit L [X] [X] :- negated X NX, not(find_in NX L), !.
+pure_lit L [X|Xs] [X|Ys] :- literal X, negated X NX, not(find_in NX L), pure_lit L Xs Ys, !.
+pure_lit L [_|Xs] Ys :- pure_lit L Xs Ys.
+
+pred unit_clause i: formula, o: list formula.
+unit_clause X [X] :- literal X, !.
+unit_clause (P && X) [X| Xs] :- literal X, unit_clause P Xs, !.
+unit_clause (X && P) [X| Xs] :- literal X, unit_clause P Xs, !.
+unit_clause (P && Q) L :- not(literal Q),  unit_clause P L, !.
+unit_clause _ [].
+
+%%% ---------------------------------------------------------------------------
+%%% One literal rule. Every unit clauses will be eliminated.
+%%% ---------------------------------------------------------------------------
+
+pred one_lit_rule1 i: formula, i: list formula, o: formula.
+one_lit_rule1 P L truth :- literal P, find_in P L, !.
+one_lit_rule1 P L falsity :- literal P, negated P NP, find_in NP L, !.
+one_lit_rule1 (X !! Y) L (X1 !! Y1) :- one_lit_rule1 X L X1, one_lit_rule1 Y L Y1, !.
+one_lit_rule1 (X && Y) L (X1 && Y1) :- one_lit_rule1 X L X1, one_lit_rule1 Y L Y1, !.
+one_lit_rule1 P _ P.
+
+pred one_lit_rule i: formula, o: formula.
+one_lit_rule P falsity :- unit_clause P L, contradiction L, !.
+one_lit_rule P P1 :- unit_clause P L,
+(pi X X1 \ copy1/fm X X1 :- one_lit_rule1 X L X1) => dcopy/fm P P2, simplify P2 P1.
+
+%%% ---------------------------------------------------------------------------
+%%% Negative affermative rule to eliminate every pure literal from the clauses.
+%%% ---------------------------------------------------------------------------
+
+pred neg_aff_rule1 i: formula, i:list formula, o:formula.
+neg_aff_rule1 (X && Y) _ (X1 && Y1) :- copy1/fm X X1, copy1/fm Y Y1.
+neg_aff_rule1 X L truth :- literal X, find_in X L, !. 
+neg_aff_rule1 (X !! _) L truth :- literal X, find_in X L, !.
+neg_aff_rule1 (_ !! Y) L truth :- neg_aff_rule1 Y L truth, !.
+neg_aff_rule1 X _ X.
+
+pred neg_aff_rule i: formula, o:formula.
+neg_aff_rule P P1 :- literals P L, pure_lit L L L1, 
+(pi X X1 \ copy1/fm X X1 :- neg_aff_rule1 X L1 X1) => dcopy/fm P P2, simplify P2 P1.
+
+%%% ---------------------------------------------------------------------------
+%%% Resolution
+%%% ---------------------------------------------------------------------------
+
+%-accumulate positive formulas-%
+pred resolve_onp i: formula, i: formula, o: list formula.
+resolve_onp P (Q !! P) [Q] :- atomic P, !.
+% resolve_onp P (Q1 !! P !! Q2) [(Q1 !! Q2)] :- atomic P, !.
+resolve_onp P (P !! Q) [Q] :- atomic P, !.
+
+resolve_onp S (P && Q) L :- std.spy(resolve_onp S P L1), std.spy(resolve_onp S Q L2), atomic S, std.spy(std.append L1 L2 L).
+% resolve_onp P (_ !! _) _ :- atomic P.
+
+pred resolution i:formula, o:formula.
+
+% collezionare gli atomi in una lista con atoms 
+% risolvere un atomo alla volta e toglierli da quella lista man mano
+
+% pred length_list i: list A, o: int.
+% length_list [] 0 :- !.
+% length_list [_|Xs] N :- length_list Xs N1, N is (N1 + 1).
+
+% pred num_clauses i: formula, o: int.
+% num_clauses ( _ !! _ ) 1 :- !.
+% num_clauses (P && ( _ !! _ )) N :- num_clauses P N1, N is (N1 + 1).
+
+%%% ---------------------------------------------------------------------------
+%%% Final predicate
+%%% ---------------------------------------------------------------------------
+
+pred until i:(A -> A -> o), i:A, o:A.
+until F A B :- F A C, not(A = C), until F C B, !.
+until _ A A.
+
+pred dp i: formula, o: formula.
+dp P Q :-   cnf P P0,
+            until one_lit_rule P0 P1, 
+            until neg_aff_rule P1 P2, 
+            resolution P2 P3,
+            simplify P3 Q.
+
+

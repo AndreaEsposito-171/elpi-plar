@@ -1,0 +1,69 @@
+%%% ===========================================================================
+%%% Generic infrastructure.
+%%% ===========================================================================
+
+accumulate lib.
+accumulate formula.
+accumulate verbosity.
+accumulate prop.
+accumulate fol.
+accumulate test.
+
+%%% ---------------------------------------------------------------------------
+%%% Generic terms.
+%%% ---------------------------------------------------------------------------
+
+type fn string -> list term -> term.
+
+copy/tm (fn S Xs) (fn S Ys) :- !, std.map Xs copy/tm Ys.
+
+pred funcval i:string, i:list A, o:A.
+:if "DBG:HOLDS"
+funcval S Vs V :- print "Enter:" (funcval S Vs V), fail.
+
+:if "DBG:HOLDS"
+termval X A :- print "Enter:" (termval X A), fail.
+termval (fn S Xs) A :- !, funcval S {std.map Xs termval} A.
+
+%%% ---------------------------------------------------------------------------
+%%% Generic formulas.
+%%% ---------------------------------------------------------------------------
+
+type atom string -> list term -> formula.
+
+copy/fm (atom S Xs) (atom S Ys) :- !, std.map Xs copy/tm Ys.
+
+pred atomval i:string, i:list A, o:bool.
+:if "DBG:HOLDS"
+atomval S As B :- print "Enter:" (atomval S As B), fail.
+
+eval (atom S Xs) B :- !, atomval S {std.map Xs termval} B.
+
+%%% ---------------------------------------------------------------------------
+%%% Boolean interpretation.
+%%% ---------------------------------------------------------------------------
+
+domain [ff, tt].
+
+funcval "0" [] ff. 
+funcval "0" [] tt. 
+funcval "+" [A, B] C :- orb  A B C. 
+funcval "*" [A, B] C :- andb A B C. 
+
+atomval "=" [A, B] C :- iffb A B C.
+
+%%% ---------------------------------------------------------------------------
+%%% Run tests.
+%%% ---------------------------------------------------------------------------
+
+shorten test.{ run-tests, ok, ko, okb, kob, ok-eq, section }.
+shorten verbosity.{ quiet, terse, info, verbose, debug, with-verbosity }.
+
+main :-
+    with-verbosity quiet (run-tests
+    [ section "Fol gen"
+    , okb
+        (holds/c (ctx A\ ctx B\
+                    formula/c (atom "=" [fn "+" [A, B],
+                                         fn "+" [B, A]])))
+    ]).

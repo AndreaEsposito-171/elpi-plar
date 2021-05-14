@@ -1,0 +1,113 @@
+%%% ===========================================================================
+%%% Simple test for FOL.
+%%% ===========================================================================
+
+accumulate lib.
+accumulate formula.
+accumulate verbosity.
+accumulate prop.
+accumulate fol.
+accumulate test.
+
+%%% ---------------------------------------------------------------------------
+%%% Model.
+%%% ---------------------------------------------------------------------------
+
+kind dom type.
+type a, b dom.
+
+pred domain o:list dom.
+domain [a, b].
+
+pred eval_f i:dom, o:dom.
+eval_f a b.
+eval_f b a.
+
+pred eval_r i:dom, o:bool.
+eval_r a tt.
+eval_r b ff.
+
+pred eval_t i:dom, o:bool.
+eval_t _X ff.
+
+type x, y term.
+type f term -> term.
+type r, t term -> formula.
+
+type p, q, r formula.
+
+copy/fm p p :- !.
+copy/fm q q :- !.
+copy/fm r r :- !.
+
+
+dcopy/fm p p :- !.
+dcopy/fm q q :- !.
+dcopy/fm r r :- !.
+
+
+%%% ---------------------------------------------------------------------------
+%%% Interpretation.
+%%% ---------------------------------------------------------------------------
+
+% Iteration.
+copy/tm x x.
+copy/tm y y.
+copy/tm (f X) (f X1) :- copy/tm X X1.
+
+copy/fm (r X) (r X1) :- !, copy/tm X X1.
+copy/fm (t X) (t X1) :- !, copy/tm X X1.
+
+dcopy/fm (r X) P1 :- copy/tm X Y, copy1/fm (r Y) P1.
+dcopy/fm (t X) P1 :- copy/tm X Y, copy1/fm (t Y) P1.
+
+% Terms.
+termval x a.
+termval y b.
+termval (f X) A :- eval_f {termval X} A.
+
+% Atomic formulas.
+eval (r X) B :- eval_r {termval X} B.
+eval (t X) B :- eval_t {termval X} B.
+
+%%% ---------------------------------------------------------------------------
+%%% Run tests.
+%%% ---------------------------------------------------------------------------
+
+shorten test.{ run-tests, ok, ko, okb, kob, ok-eq, section }.
+shorten verbosity.{ quiet, terse, info, verbose, debug, with-verbosity }.
+
+main :-
+    with-verbosity quiet (run-tests
+    [ section "holds"
+    , okb (holds (r x))
+    , kob (holds (r y))
+    , kob (holds (t x))
+    , okb (holds (t x !! r x))
+    , kob (holds (t x && r x))
+    , okb (holds (r y !! r x))
+    , kob (holds (r y && r x))
+    , kob (holds (all a\ r (f a)))
+    , okb (holds (ex  a\ r (f a)))
+    , okb (holds/c (ctx a\ formula/c (r a !! r x)))
+    , kob (holds/c (ctx a\ formula/c (r a && r x)))
+    , section "simplify"
+    , ok-eq (all X \ r X) (simplify (all X \ ex U \ r X))   
+    , ok-eq (all X \ r X && t y) (simplify (all X \ ex U \ r X && ex Y \ t y)) 
+    , section "nnf"
+    , ok-eq (ex X \ neg (r X)) (nnf (neg (all X \ r X)))
+    , ok-eq (neg (r x) !! neg (r y)) (nnf (neg (r x && r y)))
+    , ok-eq ((ex X \ neg (r X)) !! r y)
+            (nnf (neg ((all X \ r X) && ex X \ neg (r y))))
+    , section "prenex"
+    , ok-eq (ex X \ neg (r X)) (prenex (ex X \ neg (r X)))
+    , ok-eq (all X \ all Y \ r X && r Y) (prenex (all X \ r X && (all Y \ r Y)))
+    , section "pnf"
+    , ok-eq (ex X \ neg (r X) !! r x) (pnf (neg (all X \ r X) !! r x))
+    , ok-eq (ex X \ neg (r X) !! r x && r x)
+            (pnf (ex A \ neg (all X \ r X) !! r x && (ex Y \ r x))) 
+    , ok-eq (ex X \ neg (r X) !! r x && t x)
+            (pnf (ex A \ neg (all X \ r X) !! r x && (ex Y \ t x)))
+    , ok-eq (ex X \ ex Y \ neg (r X) && neg (r Y) !! neg (r X))
+            (pnf ((ex X \ neg (all Y \ r X !! r Y)) !! neg (all X \ r X)))
+     ]).

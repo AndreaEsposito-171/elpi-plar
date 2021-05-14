@@ -1,0 +1,52 @@
+%%% =========================================================================== 
+%%% Tests for prop.
+%%% =========================================================================== 
+
+accumulate lib.
+accumulate formula.
+accumulate verbosity.
+accumulate prop.
+accumulate test.
+
+type p, q, r formula.
+
+atomic P :- std.mem! [p,q,r] P.
+
+shorten test.{ run-tests, ok, ko, okb, kob, ok-eq, section }.
+shorten verbosity.{ quiet, terse, info, verbose, debug, with-verbosity }.
+
+%%% ---------------------------------------------------------------------------
+%%% Run tests.
+%%% ---------------------------------------------------------------------------
+
+main :-
+    with-verbosity quiet (run-tests
+    [ section "Test eval"
+    , (kob R \
+         [ (eval p tt :- !)
+         , (eval q ff :- !)
+         ] => eval (p && q) R)
+    , (okb R \
+         [(eval p tt :- !)
+         , (eval q tt :- !)
+         ] => eval (p && q) R)
+    , section "Test atoms"
+    , ok-eq [q, p] (atoms (p && q !! p))
+    , section "Test truth table"
+    , ok (truthtable (p && q !! (p ==> r)))
+    , ok (truthtable (neg p !! q))
+    , section "Test tautology"
+    , ok (tautology (neg p !! p))
+    , ok (tautology (falsity ==> p))
+    , ko (tautology (neg p !! q))
+    , section "Test satisfiable"
+    , ok (satisfiable (neg p !! p))
+    , ok (satisfiable (neg p !! q))
+    , ko (satisfiable (neg p && p))
+    , section "Test unsatisfiable"
+    , ok (unsatisfiable (neg p && p))
+    , ko (unsatisfiable (neg p !! q))
+    , ko (unsatisfiable (neg p && q))
+    , ko (unsatisfiable (neg p !! p))
+    ]).
+

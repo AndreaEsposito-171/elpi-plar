@@ -1,0 +1,60 @@
+accumulate lib.
+accumulate formula.
+accumulate prop.
+accumulate fol.
+accumulate verbosity.
+accumulate test.
+accumulate prolog.
+accumulate davis_putnam.
+
+type p, q, r formula.
+
+copy/fm p p :- !.
+copy/fm q q :- !.
+copy/fm r r :- !.
+
+copy1/fm p p :- !.
+copy1/fm q q :- !.
+copy1/fm r r :- !.
+
+dcopy/fm p p :- !.
+dcopy/fm q q :- !.
+dcopy/fm r r :- !.
+
+atomic p.
+atomic q.
+atomic r.
+
+%%% ---------------------------------------------------------------------------
+%%% Run tests.
+%%% ---------------------------------------------------------------------------
+
+shorten test.{ run-tests, ok, ko, okb, kob, ok-eq, section }.
+shorten verbosity.{ quiet, terse, info, verbose, debug, with-verbosity }.
+
+main :-
+    with-verbosity quiet (run-tests
+    [ section "One literal"
+    , (ok-eq truth (one_lit_rule ((p !! q) && p)))
+    , (ok-eq truth (one_lit_rule (p && (p !! q))))
+    , (ok-eq q (one_lit_rule (neg p && (p !! q))))
+    , (ok-eq q (one_lit_rule (p && (neg p !! q))))    
+    , (ok-eq q (one_lit_rule ((p !! q) && neg p)))    
+    , (ok-eq q (one_lit_rule ((neg p !! q) && p)))      
+    , (ok-eq truth (one_lit_rule (p && r && (p !! q))))
+    , (ok-eq truth (one_lit_rule (p && (p !! q) && r)))
+    , (ok-eq truth (one_lit_rule ((p !! q) && p && r)))
+    , (ok-eq (q && r) (one_lit_rule (neg p && (p !! q) && (p !! r))))
+    , (ok-eq (q !! q) (one_lit_rule (p && r && (q !! q))))
+    , (ok-eq ((r !! r !! q) && (r !! r))(one_lit_rule (p && (r !! r !! q) && (r !! r))))
+    , (ok-eq (p !! q) (one_lit_rule (p !! q)))
+    , (ok-eq truth (one_lit_rule (p && (r !! r !! q !! p) && (q !! p !! r) && (p !! q) && (p !! p))))
+    , (ok-eq ((r !! r !! q !! r) && (q !! r !! r) && (r !! q) && (r !! q))
+      (one_lit_rule (p && (r !! r !! q !! r) && (q !! r !! r) && (r !! q) && (r !! q))))
+    , (ok-eq falsity (one_lit_rule (p && q && r && neg r && (p !! r !! q))))
+    , section "Positive Affirmative Rule",
+
+    ]).
+
+
+

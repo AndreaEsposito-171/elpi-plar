@@ -1,0 +1,34 @@
+%%% ===========================================================================
+%%% Tests for lib.
+%%% ===========================================================================
+
+accumulate lib.
+accumulate verbosity.
+accumulate test.
+
+%%% ---------------------------------------------------------------------------
+%%% Accessory definitions.
+%%% ---------------------------------------------------------------------------
+
+pred fun i:int, o:bool.
+fun 0 tt.
+fun 1 ff.
+fun 2 tt.
+
+%%% ---------------------------------------------------------------------------
+%%% Run tests.
+%%% ---------------------------------------------------------------------------
+
+shorten test.{ run-tests, ok, ko, okb, kob, ok-eq, section }.
+shorten verbosity.{ quiet, terse, info, verbose, debug, with-verbosity }.
+
+main :-
+    with-verbosity quiet (run-tests
+    [ section "forallb"
+    , okb (forallb [0, 2] fun)
+    , kob (forallb [0, 1] fun)
+    , section "existsb"
+    , okb (existsb [0, 1] fun)
+    , kob (existsb [1] fun)
+    % , okb (existsb [1] fun)   % To see an example of failure.
+    ]).

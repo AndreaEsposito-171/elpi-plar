@@ -1,0 +1,48 @@
+%%% ===========================================================================
+%%% Basic stuff for propositional logic: datatype, parsing and printing.
+%%%
+%%% Needs: lib, verbosity, formula.
+%%% ===========================================================================
+
+shorten verbosity.{ verbosity, quiet, terse, info, verbose, debug,
+                    when-verbosity, with-verbosity }.
+
+pred eval i:formula, o:bool.
+:if "DBG:HOLDS"
+eval P B :- print "Enter:" (eval P B), fail.
+eval falsity  ff :- !.
+eval truth    tt :- !.
+eval (  neg P) A :- !, negb {eval P} A.
+eval (P &&  Q) A :- !, andb {eval P} {eval Q} A.
+eval (P !!  Q) A :- !, orb  {eval P} {eval Q} A.
+eval (P ==> Q) A :- !, impb {eval P} {eval Q} A.
+eval (P <=> Q) A :- !, iffb {eval P} {eval Q} A.
+
+pred onallvaluations i:(bool -> prop), i:formula, i:list formula.
+onallvaluations F P []     :- F {eval P}.
+onallvaluations F P [A|As] :- ((eval A ff :- !) => onallvaluations F P As),
+                              ((eval A tt :- !) => onallvaluations F P As).
+
+pred truthtable_row i:list formula, i:bool.
+truthtable_row As B :-
+    std.map As eval Bs,
+    when-verbosity info (print [B | Bs]).
+
+pred truthtable i:formula.
+truthtable P :- atoms P As,
+                when-verbosity info (print [P | As]),
+                onallvaluations (truthtable_row As) P As.
+
+pred tautology_row i:bool.
+tautology_row tt.
+
+pred tautology i:formula.
+tautology P :- atoms P Atoms,
+               onallvaluations tautology_row P Atoms.
+            %    , print P " is a tautology".
+
+pred unsatisfiable i:formula.
+unsatisfiable P :- tautology (neg P).
+
+pred satisfiable i:formula.
+satisfiable P :- not (unsatisfiable P).

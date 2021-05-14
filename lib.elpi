@@ -1,0 +1,54 @@
+%%% ===========================================================================
+%%% Miscellanea.
+%%% ===========================================================================
+
+%%% ---------------------------------------------------------------------------
+%%% Boolean connectives.
+%%% ---------------------------------------------------------------------------
+
+pred negb o:bool, o:bool.
+negb tt ff.
+negb ff tt.
+
+pred andb o:bool, o:bool, o:bool.
+andb tt tt tt.
+andb ff _B ff.
+andb _B ff ff.
+
+pred orb o:bool, o:bool, o:bool.
+orb ff ff ff.
+orb tt _B tt.
+orb _B tt tt.
+
+pred impb o:bool, o:bool, o:bool.
+impb _B tt tt.
+impb ff _B tt.
+impb tt ff ff.
+
+pred iffb o:bool, o:bool, o:bool.
+iffb tt tt tt.
+iffb ff ff tt.
+iffb ff tt ff.
+iffb tt ff ff.
+
+%%% ---------------------------------------------------------------------------
+%%% Boolean operations on lists.
+%%% ---------------------------------------------------------------------------
+
+pred forallb i:list A, i:(A->bool->pred), o:bool.
+forallb [] _F tt.
+forallb [X|Xs] F B :- F X tt, !, forallb Xs F B.
+forallb _Xs _F ff.
+
+pred existsb i:list A, i:(A->bool->pred), o:bool.
+existsb [] _F ff.
+existsb [X|_] F tt :- F X tt, !.
+existsb [_|Xs] F B :- existsb Xs F B.
+
+%%% ---------------------------------------------------------------------------
+%%% Set-like operations on lists.
+%%% ---------------------------------------------------------------------------
+
+pred insert i:A, i:list A, o:list A.
+insert A L L :- std.mem L A, !.
+insert A L [A|L].

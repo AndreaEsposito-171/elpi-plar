@@ -1,0 +1,48 @@
+accumulate lib.
+accumulate formula.
+accumulate prop.
+accumulate fol.
+accumulate verbosity.
+accumulate test.
+accumulate prolog.
+accumulate skolem.
+accumulate davis_putnam.
+
+
+type pp term -> term -> formula.
+type p, q, r formula.
+type f term -> term -> term.
+
+
+copy/fm (pp X Y) (pp X1 Y1) :- !, copy/tm X X1, copy/tm Y Y1.
+dcopy/fm (pp X Y) (pp X1 Y1) :- !, copy/tm X X1, copy/tm Y Y1.
+copy/tm (f X Y) (f X1 Y1) :- !, copy/tm X X1, copy/tm Y Y1.
+
+
+copy/fm p p :- !.
+copy/fm q q :- !.
+copy/fm r r :- !.
+
+copy1/fm p p :- !.
+copy1/fm q q :- !.
+copy1/fm r r :- !.
+
+dcopy/fm p p :- !.
+dcopy/fm q q :- !.
+dcopy/fm r r :- !.
+
+atomic p.
+atomic q.
+atomic r.
+
+% pred pure_literals i:formula, o:list formula.
+% pure_literals P L :- 
+%     (pi A NA L L1 \ fold A L L1 :- 
+%     literal A, 
+%     negated A NA, 
+%     std.spy(not(find_in NA L)), std.spy(insert A L L1)
+%     )
+%     => std.spy(fold P [] L).
+
+
+main :-  std.spy(resolve_onp p ((q !! p !! q) && (r !! q !! p) && (q !! q !! p)) X), print X.

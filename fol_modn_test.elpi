@@ -1,0 +1,215 @@
+%%% ===========================================================================
+%%% Modular arithmetic interpretation.
+%%% ===========================================================================
+
+accumulate lib.
+accumulate formula.
+accumulate verbosity.
+accumulate prop.
+accumulate fol.
+accumulate test.
+
+%%% ---------------------------------------------------------------------------
+%%% Miscellanea.
+%%% ---------------------------------------------------------------------------
+
+type mod int -> int -> int.
+
+pred numseg o:list int, i:int, i:int.
+numseg _L M N :- M i> N, !, fail.
+numseg L M N :- numseg.rec L M N.
+
+pred numseg.rec o:list int, i:int, i:int.
+numseg.rec [M|L] M N :- M i=< N, !, M1 is M + 1, numseg.rec L M1 N.
+numseg.rec [] _M _N.
+
+%%% ---------------------------------------------------------------------------
+%%% Model, language, interpretation.
+%%% ---------------------------------------------------------------------------
+
+pred domain/mod i:int, o:list int.
+domain/mod N D :- N1 is N - 1, numseg D 0 N1.
+
+type zero, one, two term.
+type add, mul term -> term -> term.
+type eq term -> term -> formula.
+
+namespace mod_interp
+{
+    pred eq/mod i:int, i:int, i:int, o:bool.
+    eq/mod N X Y B :-
+        N i> 0,
+        P is (X - Y) mod N,
+        if (P = 0) (B = tt) (B = ff).
+
+    pred termval/mod i:term, o:int.
+    termval/mod zero 0.
+    termval/mod one  1.
+    termval/mod two  2.
+    termval/mod (add X Y) N :- N is {termval X} + {termval Y}.
+    termval/mod (mul X Y) N :- N is {termval X} * {termval Y}.
+
+    pred atomval/mod i:int, i:formula, o:bool.
+    atomval/mod K (eq X Y) B :- eq/mod K {termval X} {termval Y} B.
+}
+
+pred holds/mod i:int, i:formula, o:bool.
+holds/mod K P B :-
+    [ (pi D \ domain D :- domain/mod K D)
+    , (pi X A \ termval X A :- mod_interp.termval/mod X A)
+    , (pi P B \ eval P B    :- mod_interp.atomval/mod K P B, !)
+    ] => holds P B.
+
+%%% ---------------------------------------------------------------------------
+%%% Tests.
+%%% ---------------------------------------------------------------------------
+
+pred commutative i:(term -> term -> term), o:formula.
+commutative Op (all X \ all Y \ eq (Op X Y) (Op Y X)).
+
+pred associative i:(term -> term -> term), o:formula.
+associative Op (all X \ all Y \ all Z \ eq (Op X (Op Y Z)) (Op (Op X Y) Z)).
+
+pred is_lid i:(term -> term -> term), i:term, o:formula.
+is_lid Op Id (all X \ eq (Op Id X) X).
+
+pred is_rid i:(term -> term -> term), i:term, o:formula.
+is_rid Op Id (all X \ eq (Op X Id) X).
+
+pred is_id i:(term -> term -> term), i:term, o:formula.
+is_id Op Id (HasLId && HasRId) :-
+    is_lid Op Id HasLId,
+    is_rid Op Id HasRId.
+
+pred hasinv o:formula.
+hasinv (all X \ neg (eq X zero) ==> ex Y \ eq (mul X Y) one).
+
+pred monoidal i:(term -> term -> term), i:term, o:formula.
+monoidal Op Id (IsAssoc && IsComm && IsId) :-
+    associative Op IsAssoc,
+    commutative Op IsComm,
+    is_id Op Id IsId.
+
+pred ldirstrib i:(term -> term -> term), i:(term -> term -> term), o:formula.
+ldirstrib Add Mul
+    (all X \ all Y \ all Z \
+        eq (Mul X (Add Y Z)) (Add (Mul X Y) (Mul X Z))).
+
+pred rdirstrib i:(term -> term -> term), i:(term -> term -> term), o:formula.
+rdirstrib Add Mul
+    (all X \ all Y \ all Z \
+        eq (Mul (Add Y Z) X) (Add (Mul Y X) (Mul Z X))).
+
+pred distrib i:(term -> term -> term), i:(term -> term -> term), o:formula.
+distrib Add Mul (LDistr && RDistr) :-
+    ldirstrib Add Mul LDistr,
+    rdirstrib Add Mul RDistr.
+
+pred is_lzero i:(term -> term -> term), i:term, o:formula.
+is_lzero Mul Zero (all X \ eq (Mul Zero X) Zero). 
+
+pred is_rzero i:(term -> term -> term), i:term, o:formula.
+is_rzero Mul Zero (all X \ eq (Mul X Zero) Zero). 
+
+pred is_zero i:(term -> term -> term), i:term, o:formula.
+is_zero Mul Zero (HasLZero && HasRZero) :-
+    is_lzero Mul Zero HasLZero,
+    is_rzero Mul Zero HasRZero.
+
+pred is_ring o:formula.
+is_ring ((ex z \ AddMon z && HasZero z) && (ex u \ MulMon u) && Distr) :-
+    (pi z \ monoidal add z (AddMon z),
+            is_zero mul z (HasZero z)),
+    (pi u \ monoidal mul u (MulMon u)),
+    distrib add mul Distr.
+
+%%% ---------------------------------------------------------------------------
+%%% Run tests.
+%%% ---------------------------------------------------------------------------
+
+shorten test.{ run-tests, ok, ko, okb, kob, ok-eq, section }.
+shorten verbosity.{ quiet, terse, info, verbose, debug, with-verbosity }.
+
+main :-
+    with-verbosity quiet (run-tests
+    [ section "numseg"
+    , ok-eq [0,1,2] (L \ numseg L 0 2)
+    , ok (numseg [] 1 1)
+    , ko (pi L \ numseg L 1 0)
+    , section "Modulo 3"
+    , okb (holds/mod 3 (eq (add two one) zero))
+    , kob (holds/mod 3 (eq (add two two) zero))
+    , okb (holds/mod 3 (eq (mul two two)  one))
+    , kob (holds/mod 3 (eq (mul two two) zero))
+    , okb (holds/mod 3 (all X \ eq (add X zero)   X ))
+    , okb (holds/mod 3 (ex  X \ eq (add X  one)  two))
+    , okb (holds/mod 3 (all X \ eq (mul X zero) zero))
+    , kob (holds/mod 3 (ex  X \ eq (mul X zero)  one))
+    , okb (holds/mod 3 (all X \ all Y \ eq (add X Y) (add Y X)))
+    , okb (holds/mod 3 (all X \ all Y \ eq (mul X Y) (mul Y X)))
+    , section "Modulo 5"
+    , okb (holds/mod 5 (eq (add (add two one) two) zero))
+    , kob (holds/mod 5 (eq (add two two) zero))
+    , okb (holds/mod 5 (all X \ eq (add X zero)   X ))
+    , okb (holds/mod 5 (ex  X \ eq (add X  one)  two))
+    , okb (holds/mod 5 (all X \ eq (mul X zero) zero))
+    , kob (holds/mod 5 (ex  X \ eq (mul X zero)  one))
+    , okb (holds/mod 5 (all X \ all Y \ eq (add X Y) (add Y X)))
+    , okb (holds/mod 5 (all X \ all Y \ eq (mul X Y) (mul Y X)))
+    , section "commutative add"
+    , okb (holds/mod 2 {commutative add})
+    , okb (holds/mod 3 {commutative add})
+    , okb (holds/mod 4 {commutative add})
+    , okb (holds/mod 5 {commutative add})
+    , okb (holds/mod 6 {commutative add})
+    , okb (holds/mod 7 {commutative add})
+    , section "commutative mul"
+    , okb (holds/mod 2 {commutative mul})
+    , okb (holds/mod 3 {commutative mul})
+    , okb (holds/mod 4 {commutative mul})
+    , okb (holds/mod 5 {commutative mul})
+    , okb (holds/mod 6 {commutative mul})
+    , okb (holds/mod 7 {commutative mul})
+    , section "zero"
+    , okb (holds/mod 2 {is_id add zero})
+    , okb (holds/mod 3 {is_id add zero})
+    , okb (holds/mod 4 {is_id add zero})
+    , okb (holds/mod 5 {is_id add zero})
+    , okb (holds/mod 6 {is_id add zero})
+    , okb (holds/mod 7 {is_id add zero})
+    , section "one"
+    , okb (holds/mod 2 {is_id mul one})
+    , okb (holds/mod 3 {is_id mul one})
+    , okb (holds/mod 4 {is_id mul one})
+    , okb (holds/mod 5 {is_id mul one})
+    , okb (holds/mod 6 {is_id mul one})
+    , okb (holds/mod 7 {is_id mul one})
+    , section "associative add"
+    , okb (holds/mod 2 {associative add})
+    , okb (holds/mod 3 {associative add})
+    , okb (holds/mod 4 {associative add})
+    , okb (holds/mod 5 {associative add})
+    , okb (holds/mod 6 {associative add})
+    , okb (holds/mod 7 {associative add})
+    , section "associative mul"
+    , okb (holds/mod 2 {associative mul})
+    , okb (holds/mod 3 {associative mul})
+    , okb (holds/mod 4 {associative mul})
+    , okb (holds/mod 5 {associative mul})
+    , okb (holds/mod 6 {associative mul})
+    , okb (holds/mod 7 {associative mul})
+    , section "inverse"
+    , okb (holds/mod 2 {hasinv})
+    , okb (holds/mod 3 {hasinv})
+    , kob (holds/mod 4 {hasinv})
+    , okb (holds/mod 5 {hasinv})
+    , kob (holds/mod 6 {hasinv})
+    , okb (holds/mod 7 {hasinv})
+    , section "is_ring"
+    , okb (holds/mod 2 {is_ring})
+    , okb (holds/mod 3 {is_ring})
+    , okb (holds/mod 4 {is_ring})
+    , okb (holds/mod 5 {is_ring})
+    , okb (holds/mod 6 {is_ring})
+    , okb (holds/mod 7 {is_ring})
+    ]).
