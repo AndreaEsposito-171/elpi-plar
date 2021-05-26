@@ -101,6 +101,8 @@ pred resolution i:formula, o:formula.
 %%% Final predicate
 %%% ---------------------------------------------------------------------------
 
+pred prone i:int.
+
 pred until i:(A -> A -> o), i:A, o:A.
 until F A B :- F A C, not(A = C), until F C B, !.
 until _ A A.
