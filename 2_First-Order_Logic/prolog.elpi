@@ -6,12 +6,16 @@ accumulate skolem.
 accumulate verbosity.
 accumulate test.
 
-% Existential quantifier for topprolog %
-type expr (term -> formula) -> formula.
+% Main Prolog predicate %
+pred prolog i: list formula, o: formula, o: formula.
+prolog Prog Q Q1 :- hornprog Prog Prog1, query Q, topprolog Prog1 Q Q1.
 
 %%% ---------------------------------------------------------------------------
-%%% Predicate to generate horn clauses in program and in query
+%%% Predicate to generate horn clauses in the program and in the query
 %%% ---------------------------------------------------------------------------
+
+% New existential quantifier %
+type expr (term -> formula) -> formula.
 
 pred query i: formula.
 query X :- atomic X, !.
@@ -29,19 +33,15 @@ pred hornprog i: list formula, o: list formula.
 hornprog Prog Prog1 :- std.map Prog hornrule Prog1.
 
 %%% ---------------------------------------------------------------------------
-%%% Predicate to topprolog simpleprolog 
+%%% Topprolog predicate
 %%% ---------------------------------------------------------------------------
 
 pred topprolog i: list formula, o: formula, o: formula.
 topprolog Prog (expr Q) Q1 :- !, sigma x \ topprolog Prog (Q x) Q1, print x.
 topprolog Prog Q Q :- simpleprolog Prog Q.
 
-pred prolog i: list formula, o: formula, o: formula.
-prolog Prog Q Q1 :- hornprog Prog Prog1, query Q, topprolog Prog1 Q Q1. 
- 
-
 %%% ---------------------------------------------------------------------------
-%%% Main simpleprolog predicate
+%%% Simpleprolog predicate
 %%% ---------------------------------------------------------------------------
 
 pred simpleprolog i: list formula, o: formula.
@@ -52,7 +52,7 @@ simpleprolog Prog (ex Q) :- sigma x \ simpleprolog Prog (Q x).
 simpleprolog [C|Cs] Q :- backchain [C|Cs] C Cs Q.
 
 %%% ---------------------------------------------------------------------------
-%%% Predicate for backchain
+%%% Predicate to do backchaining
 %%% ---------------------------------------------------------------------------
 
 pred backchain i: list formula, i: formula, i: list formula, o: formula.

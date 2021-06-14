@@ -86,9 +86,6 @@ resolve_onp S (P && Q) L :- std.spy(resolve_onp S P L1), std.spy(resolve_onp S Q
 
 pred resolution i:formula, o:formula.
 
-% collezionare gli atomi in una lista con atoms 
-% risolvere un atomo alla volta e toglierli da quella lista man mano
-
 % pred length_list i: list A, o: int.
 % length_list [] 0 :- !.
 % length_list [_|Xs] N :- length_list Xs N1, N is (N1 + 1).

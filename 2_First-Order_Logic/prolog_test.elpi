@@ -107,7 +107,6 @@ main :-
     , (ok (simpleprolog [(all x \ all y \ all z \ (r x y && r y z) ==> q x z),
       (truth ==> r a c), (truth ==> r c b)] 
       (q a b))) 
-
     , (ok (simpleprolog [(all x \ all y \ all z \ (r x y && q y z) ==> h x y z), (truth ==> r a b),
       (truth ==> q b c)] (ex x \ ex y \ h x b y)))
     , (ok (simpleprolog [(all x \ all y \ all z \ (r x y && q y z) ==> h x y z), (truth ==> r a b), 
@@ -168,7 +167,7 @@ main :-
     , (ok-eq (q a b) (prolog [(all x \ all y \ all z \ (r x y && r y z) ==> q x z),
       (r a c), (r c b)] (expr x \ q a x)))
 
-    % === Harrison's Tests leq === %
+  %  === Harrison's Tests leq === %
 
     , (ok (simpleprolog [(all x \ truth ==> leq zo x), (all x \ all y \ leq x y ==> leq (s x) (s y))] 
       (leq (s (s zo)) (s (s (s zo))))))
@@ -227,8 +226,8 @@ main :-
    ,  (ok-eq (append/t (cons/t (s zo) (cons/t (s (s zo)) nil/t)) (cons/t (s (s (s zo))) (cons/t (s (s (s (s zo)))) nil/t))
       (cons/t (s zo) (cons/t (s (s zo)) (cons/t (s (s (s zo))) (cons/t (s (s (s (s zo)))) nil/t)))))
       (prolog [(all x \ append/t nil/t x x), (all t \ all h \ all l \ all a \ append/t t l a ==> append/t (cons/t h t) l (cons/t h a))]
-      (expr x \ append/t x (cons/t (s (s (s zo))) (cons/t (s (s (s (s zo)))) nil/t))  
-      (cons/t (s zo) (cons/t (s (s zo)) (cons/t (s (s (s zo))) (cons/t (s (s (s (s zo)))) nil/t)))))))
+      (expr x \ append/t x (cons/t (s (s (s zo))) (cons/t (s (s (s (s zo)))) nil/t))  % [3,4]
+      (cons/t (s zo) (cons/t (s (s zo)) (cons/t (s (s (s zo))) (cons/t (s (s (s (s zo)))) nil/t))))))) %[1,2,3,4]
 
     , (ok-eq (append/t nil/t (cons/t (s zo) (cons/t (s (s zo)) (cons/t (s (s (s zo))) (cons/t (s (s (s (s zo)))) nil/t))))
       (cons/t (s zo) (cons/t (s (s zo)) (cons/t (s (s (s zo))) (cons/t (s (s (s (s zo)))) nil/t)))))
