@@ -6,7 +6,7 @@ accumulate skolem.
 accumulate verbosity.
 accumulate test.
 
-% Main Prolog predicate %
+% - Main Prolog predicate - %
 pred prolog i: list formula, o: formula, o: formula.
 prolog Prog Q Q1 :- hornprog Prog Prog1, query Q, topprolog Prog1 Q Q1.
 
@@ -14,7 +14,7 @@ prolog Prog Q Q1 :- hornprog Prog Prog1, query Q, topprolog Prog1 Q Q1.
 %%% Predicate to generate horn clauses in the program and in the query
 %%% ---------------------------------------------------------------------------
 
-% New existential quantifier %
+% - New existential quantifier - More constructive %
 type expr (term -> formula) -> formula.
 
 pred query i: formula.
@@ -37,11 +37,11 @@ hornprog Prog Prog1 :- std.map Prog hornrule Prog1.
 %%% ---------------------------------------------------------------------------
 
 pred topprolog i: list formula, o: formula, o: formula.
-topprolog Prog (expr Q) Q1 :- !, sigma x \ topprolog Prog (Q x) Q1, print x.
+topprolog Prog (expr Q) Q1 :- !, sigma x \ topprolog Prog (Q x) Q1.
 topprolog Prog Q Q :- simpleprolog Prog Q.
 
 %%% ---------------------------------------------------------------------------
-%%% Simpleprolog predicate
+%%% Simpleprolog predicate - The core predicate
 %%% ---------------------------------------------------------------------------
 
 pred simpleprolog i: list formula, o: formula.
@@ -58,4 +58,4 @@ simpleprolog [C|Cs] Q :- backchain [C|Cs] C Cs Q.
 pred backchain i: list formula, i: formula, i: list formula, o: formula.
 backchain Prog (Qs ==> Q) _Cs Q :- simpleprolog Prog Qs.
 backchain Prog (all C) Cs Q :- sigma x \ backchain Prog (C x) Cs Q.
-backchain Prog _C [C|Cs] Q :- backchain Prog C Cs Q.
+backchain Prog _ [C|Cs] Q :- backchain Prog C Cs Q.
